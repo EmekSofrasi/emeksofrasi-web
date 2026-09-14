@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menü Güncelle | Emek Sofrası</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="images/emek_sofrasi_logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Mulish:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#04210f;
+    --green-2:#0a3319;
+    --gold:#e0c07c;
+    --gold-2:#8a6a26;
+    --cream:#fdf9ef;
+    --ink:#1f3d2a;
+    --line:#d8cba4;
+    --danger:#b23b3b;
+    --ok:#2f7a4d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--green);
+    color:var(--cream);
+    font-family:"Mulish",system-ui,sans-serif;
+    min-height:100svh;
+    padding:32px 16px 80px;
+  }
+  h1{
+    font-family:"Playfair Display",serif;
+    font-size:clamp(1.5rem,1.1rem + 1.6vw,2.3rem);
+    color:var(--gold);
+    margin:0 0 6px;
+    text-align:center;
+  }
+  .sub{
+    text-align:center;
+    color:var(--cream);
+    opacity:0.75;
+    margin:0 0 28px;
+    font-size:0.95rem;
+  }
+  form{
+    max-width:920px;
+    margin:0 auto;
+  }
+  .card{
+    background:var(--cream);
+    color:var(--ink);
+    border-radius:14px;
+    padding:20px 22px;
+    margin-bottom:18px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+  }
+  .card h2{
+    font-family:"Playfair Display",serif;
+    font-size:1.15rem;
+    margin:0 0 14px;
+    color:var(--green-2);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .card h2 .no{
+    background:var(--green);
+    color:var(--gold);
+    font-size:0.85rem;
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .fixed-badge{
+    font-size:0.72rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    background:var(--gold-2);
+    color:var(--cream);
+    padding:3px 9px;
+    border-radius:999px;
+    margin-left:auto;
+  }
+  .fields{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:10px;
+  }
+  label.field-label{
+    display:block;
+    font-size:0.75rem;
+    color:var(--gold-2);
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    margin-bottom:4px;
+  }
+  input[type="text"],input[type="password"]{
+    width:100%;
+    padding:9px 11px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font:inherit;
+    font-size:0.95rem;
+    background:#fff;
+    color:var(--ink);
+  }
+  input[type="text"]:focus,input[type="password"]:focus{
+    outline:2px solid var(--green-2);
+    outline-offset:1px;
+  }
+  input[disabled]{
+    background:#ece6d4;
+    color:#8a8270;
+  }
+  .hafta-row{
+    max-width:340px;
+  }
+  .yan-row{
+    max-width:100%;
+  }
+  .hint{
+    font-size:0.8rem;
+    color:#6b6350;
+    margin-top:8px;
+  }
+  .submit-card{
+    text-align:center;
+  }
+  .submit-card input[type="password"]{
+    max-width:260px;
+    margin:0 auto 14px;
+    display:block;
+    text-align:center;
+  }
+  button{
+    background:var(--green);
+    color:var(--gold);
+    border:none;
+    padding:13px 34px;
+    border-radius:999px;
+    font:inherit;
+    font-weight:700;
+    font-size:1rem;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    transition:opacity .15s;
+  }
+  button:hover{opacity:0.88;}
+  button:disabled{opacity:0.5;cursor:not-allowed;}
+  #status{
+    max-width:920px;
+    margin:14px auto 0;
+    padding:12px 16px;
+    border-radius:10px;
+    font-weight:600;
+    text-align:center;
+    display:none;
+  }
+  #status.show{display:block;}
+  #status.ok{background:var(--ok);color:#fff;}
+  #status.err{background:var(--danger);color:#fff;}
+  #status.pending{background:var(--gold-2);color:var(--cream);}
+</style>
+</head>
+<body>
+
+<h1>Haftalık Menü Güncelle</h1>
+<p class="sub">Bu sayfa yalnızca menü güncellemesi içindir, sitede link olarak gösterilmez.</p>
+
+<form id="menu-form">
+  <div class="card">
+    <div class="fields hafta-row">
+      <div>
+        <label class="field-label" for="hafta">Hafta (tarih aralığı)</label>
+        <input type="text" id="hafta" name="hafta" placeholder="14 – 20 Eylül" required>
+      </div>
+    </div>
+  </div>
+
+  <div id="menuler-wrap"></div>
+
+  <div class="card">
+    <h2>Yan Ürünler <span class="fixed-badge">Her Hafta Sabit Kalabilir</span></h2>
+    <div class="fields yan-row">
+      <div>
+        <label class="field-label" for="yanUrunler">Kalemler (virgülle ayırın)</label>
+        <input type="text" id="yanUrunler" name="yanUrunler" placeholder="Cacık, Buharda Pişmiş Sebzeler" required>
+      </div>
+    </div>
+  </div>
+
+  <div class="card submit-card">
+    <label class="field-label" for="password">Parola</label>
+    <input type="password" id="password" name="password" required>
+    <button type="submit" id="submit-btn">Menüyü Güncelle</button>
+    <p class="hint">Güncelleme birkaç dakika içinde emeksofrasi.com üzerinde yayına girer.</p>
+  </div>
+</form>
+
+<div id="status"></div>
+
+<script src="js/menu-data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // n8n workflow aktive edilip webhook production URL'i teyit edilince
+  // bu satır gerekirse güncellenir.
+  var WEBHOOK_URL = "https://n8n.yunusemreaydin.co/webhook/menu-guncelle";
+
+  var wrap = document.getElementById("menuler-wrap");
+  var form = document.getElementById("menu-form");
+  var statusEl = document.getElementById("status");
+  var submitBtn = document.getElementById("submit-btn");
+
+  var KALEM_PLACEHOLDER = ["Günün Çorbası", "Ana Yemek", "Yan Ürün / Salata", "İçecek"];
+
+  function buildMenuCard(no) {
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var h2 = document.createElement("h2");
+    var span = document.createElement("span");
+    span.className = "no";
+    span.textContent = no;
+    h2.appendChild(span);
+    h2.appendChild(document.createTextNode("Menü " + no));
+    if (no === 7 || no === 8) {
+      var badge = document.createElement("span");
+      badge.className = "fixed-badge";
+      badge.textContent = "Her Hafta Sabit Kalabilir";
+      h2.appendChild(badge);
+    }
+    card.appendChild(h2);
+
+    var fields = document.createElement("div");
+    fields.className = "fields";
+    for (var i = 0; i < 4; i++) {
+      var field = document.createElement("div");
+      var label = document.createElement("label");
+      label.className = "field-label";
+      label.textContent = (i + 1) + ". Kalem";
+      var input = document.createElement("input");
+      input.type = "text";
+      input.required = true;
+      input.placeholder = KALEM_PLACEHOLDER[i];
+      input.setAttribute("data-menu", no);
+      input.setAttribute("data-kalem-index", i);
+      field.appendChild(label);
+      field.appendChild(input);
+      fields.appendChild(field);
+    }
+    card.appendChild(fields);
+    return card;
+  }
+
+  for (var m = 1; m <= 8; m++) {
+    wrap.appendChild(buildMenuCard(m));
+  }
+
+  function prefill() {
+    var data = window.MENU_DATA;
+    if (!data) return;
+    document.getElementById("hafta").value = data.hafta || "";
+    document.getElementById("yanUrunler").value = (data.yanUrunler || []).join(", ");
+    (data.menuler || []).forEach(function (menu) {
+      var inputs = document.querySelectorAll('input[data-menu="' + menu.no + '"]');
+      (menu.kalemler || []).forEach(function (val, i) {
+        if (inputs[i]) inputs[i].value = val;
+      });
+    });
+  }
+  prefill();
+
+  function showStatus(kind, text) {
+    statusEl.className = "show " + kind;
+    statusEl.textContent = text;
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    var menuler = [];
+    for (var no = 1; no <= 8; no++) {
+      var inputs = document.querySelectorAll('input[data-menu="' + no + '"]');
+      var kalemler = [];
+      for (var i = 0; i < inputs.length; i++) kalemler.push(inputs[i].value.trim());
+      menuler.push({ no: no, kalemler: kalemler });
+    }
+
+    var yanUrunler = document.getElementById("yanUrunler").value
+      .split(",")
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
+
+    var payload = {
+      password: document.getElementById("password").value,
+      hafta: document.getElementById("hafta").value.trim(),
+      menuler: menuler,
+      yanUrunler: yanUrunler
+    };
+
+    submitBtn.disabled = true;
+    showStatus("pending", "Güncelleniyor…");
+
+    fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(function (res) { return res.json().catch(function () { return {}; }); })
+      .then(function (data) {
+        submitBtn.disabled = false;
+        if (data && data.ok) {
+          showStatus("ok", "✅ Menü güncellendi. Birkaç dakika içinde sitede görünecek.");
+        } else {
+          showStatus("err", "⚠️ " + (data && data.error ? data.error : "Güncelleme başarısız oldu."));
+        }
+      })
+      .catch(function () {
+        submitBtn.disabled = false;
+        showStatus("err", "⚠️ Sunucuya ulaşılamadı. Bağlantını kontrol edip tekrar dene.");
+      });
+  });
+})();
+</script>
+</body>
+</html>
