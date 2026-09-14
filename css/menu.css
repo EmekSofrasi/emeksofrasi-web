@@ -150,6 +150,8 @@
     rgba(60, 44, 20, 0) 100%);
   pointer-events: none; z-index: 2;
 }
+/* tek sayfalık (eşleşmemiş) slide'da cilt gölgesi gösterilmez */
+.menu-carousel--spread .menu-slide--solo::after { content: none; }
 
 /* --- Kitap sayfası --- */
 .menu-page {

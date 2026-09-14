@@ -177,6 +177,41 @@
     cursor:pointer;
   }
   .add-food-btn:hover{background:var(--gold-2);color:var(--cream);}
+  .card-h2-actions{
+    margin-left:auto;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .remove-menu-btn{
+    background:transparent;
+    border:1px solid var(--danger);
+    color:var(--danger);
+    border-radius:6px;
+    padding:4px 10px;
+    font-size:0.72rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+    cursor:pointer;
+  }
+  .remove-menu-btn:hover{background:var(--danger);color:#fff;}
+  .add-menu-btn{
+    display:block;
+    width:100%;
+    max-width:920px;
+    margin:4px auto 18px;
+    background:transparent;
+    border:2px dashed var(--gold);
+    color:var(--gold);
+    padding:14px;
+    border-radius:14px;
+    font:inherit;
+    font-weight:700;
+    font-size:1rem;
+    cursor:pointer;
+  }
+  .add-menu-btn:hover{background:rgba(224,192,124,0.12);}
   .submit-card{
     text-align:center;
   }
@@ -237,6 +272,8 @@
   </div>
 
   <div id="menuler-wrap"></div>
+
+  <button type="button" class="add-menu-btn" id="add-menu-btn">+ Menü Ekle</button>
 
   <div class="card">
     <h2>Yan Ürünler <span class="fixed-badge">Her Hafta Sabit Kalabilir</span></h2>
@@ -320,7 +357,7 @@
     return input;
   }
 
-  function buildMenuCard(no) {
+  function buildMenuCard(no, foodCount) {
     var card = document.createElement("div");
     card.className = "card";
 
@@ -329,36 +366,85 @@
     span.className = "no";
     span.textContent = no;
     h2.appendChild(span);
-    h2.appendChild(document.createTextNode("Menü " + no));
-    if (no === 7 || no === 8) {
-      var badge = document.createElement("span");
-      badge.className = "fixed-badge";
-      badge.textContent = "Her Hafta Sabit Kalabilir";
-      h2.appendChild(badge);
-    }
+
+    var titleText = document.createElement("span");
+    titleText.className = "menu-title-text";
+    titleText.textContent = "Menü " + no;
+    h2.appendChild(titleText);
+
+    var actions = document.createElement("div");
+    actions.className = "card-h2-actions";
+    var removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "remove-menu-btn";
+    removeBtn.textContent = "Menüyü Kaldır";
+    removeBtn.addEventListener("click", function () {
+      if (wrap.querySelectorAll(":scope > .card").length <= 1) return;
+      card.remove();
+      renumberMenus();
+    });
+    actions.appendChild(removeBtn);
+    h2.appendChild(actions);
     card.appendChild(h2);
 
     var fields = document.createElement("div");
     fields.className = "fields";
     fields.setAttribute("data-menu", no);
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < (foodCount || 4); i++) {
       addFoodField(fields, YEMEK_PLACEHOLDER[i]);
     }
     card.appendChild(fields);
 
-    var addBtn = document.createElement("button");
-    addBtn.type = "button";
-    addBtn.className = "add-food-btn";
-    addBtn.textContent = "+ Yemek Ekle";
-    addBtn.addEventListener("click", function () { addFoodField(fields); });
-    card.appendChild(addBtn);
+    var addFoodBtn = document.createElement("button");
+    addFoodBtn.type = "button";
+    addFoodBtn.className = "add-food-btn";
+    addFoodBtn.textContent = "+ Yemek Ekle";
+    addFoodBtn.addEventListener("click", function () { addFoodField(fields); });
+    card.appendChild(addFoodBtn);
 
     return card;
   }
 
-  for (var m = 1; m <= 8; m++) {
+  function renumberMenus() {
+    var cards = wrap.querySelectorAll(":scope > .card");
+    cards.forEach(function (card, i) {
+      var no = i + 1;
+      card.querySelector(".no").textContent = no;
+      card.querySelector(".menu-title-text").textContent = "Menü " + no;
+      card.querySelector(".fields").setAttribute("data-menu", no);
+    });
+    updateFixedBadges();
+  }
+
+  function updateFixedBadges() {
+    var cards = Array.prototype.slice.call(wrap.querySelectorAll(":scope > .card"));
+    cards.forEach(function (card) {
+      var existing = card.querySelector(".fixed-badge");
+      if (existing) existing.remove();
+    });
+    var lastTwo = cards.slice(-2);
+    lastTwo.forEach(function (card) {
+      var badge = document.createElement("span");
+      badge.className = "fixed-badge";
+      badge.textContent = "Her Hafta Sabit Kalabilir";
+      var actions = card.querySelector(".card-h2-actions");
+      actions.insertBefore(badge, actions.firstChild);
+    });
+  }
+
+  function addMenuCard(foodCount) {
+    var no = wrap.querySelectorAll(":scope > .card").length + 1;
+    wrap.appendChild(buildMenuCard(no, foodCount));
+    updateFixedBadges();
+  }
+
+  var initialCount = (window.MENU_DATA && window.MENU_DATA.menuler && window.MENU_DATA.menuler.length) || 8;
+  for (var m = 1; m <= initialCount; m++) {
     wrap.appendChild(buildMenuCard(m));
   }
+  updateFixedBadges();
+
+  document.getElementById("add-menu-btn").addEventListener("click", function () { addMenuCard(); });
 
   var MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
 
@@ -439,16 +525,17 @@
     }
 
     var menuler = [];
-    for (var no = 1; no <= 8; no++) {
-      var container = document.querySelector('.fields[data-menu="' + no + '"]');
-      var inputs = container.querySelectorAll("input");
+    var menuCards = wrap.querySelectorAll(":scope > .card");
+    menuCards.forEach(function (card, idx) {
+      var no = idx + 1;
+      var inputs = card.querySelector(".fields").querySelectorAll("input");
       var kalemler = [];
       for (var i = 0; i < inputs.length; i++) {
         var v = inputs[i].value.trim();
         if (v) kalemler.push(v);
       }
       menuler.push({ no: no, kalemler: kalemler });
-    }
+    });
 
     var yanUrunler = document.getElementById("yanUrunler").value
       .split(",")

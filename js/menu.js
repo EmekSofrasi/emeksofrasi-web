@@ -1,14 +1,15 @@
 /* ==========================================================================
    Emek Sofrası — Menü sayfası
    - Kapalı kitap (kapak) → tıkla → AÇIK kitap (KARUSEL)
-   - MASAÜSTÜ: her karusel sayfasında İKİ kitap sayfası yan yana (açık kitap)
-       Sayfa 1: sol Menü 1-2 / sağ Menü 3-4
-       Sayfa 2: sol Menü 5-6 / sağ Menü 7-8 + Yan Ürünler
-       Sayfa 3: sol Pazar mesajları / sağ "kapalıyız" + tencere
-   - MOBİL: ekran dar → her karusel sayfasında TEK kitap sayfası
-       Menü 1-2 · Menü 3-4 · Menü 5-6 · Menü 7-8+Yan Ürünler · Pazar (kapalı)
+   - Menü SAYISI SABİT DEĞİL — menu-data.js'teki "menuler" dizisinin
+     uzunluğuna göre otomatik sayfalanır (2 menü = 1 kitap sayfası).
+   - MASAÜSTÜ: her karusel ekranında İKİ kitap sayfası yan yana (açık kitap),
+     her sayfada 2'şer menü + Yan Ürünler; menü sayısı tek ise son sayfa tek
+     (geniş) gösterilir. En sonda Pazar mesajları/"kapalıyız" ekranı.
+   - MOBİL: ekran dar → her karusel ekranında TEK kitap sayfası (2 menü),
+     ardından Pazar (kapalı).
    - Ok · nokta · dokunmatik kaydırma · otomatik geçiş (ana sayfa hero gibi)
-   - HER HAFTA sadece js/menu-data.js güncellenir.
+   - HER HAFTA sadece js/menu-data.js güncellenir (menu-guncelle.html paneli).
    ========================================================================== */
 (function () {
   "use strict";
@@ -22,7 +23,7 @@
   var book    = document.querySelector("[data-menu-book]");
   var weekEl  = document.querySelector("[data-menu-week]");
 
-  if (!open || !book || menuler.length < 8) return;
+  if (!open || !book || !menuler.length) return;
 
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var mobileMq = window.matchMedia("(max-width: 780px)");
@@ -58,14 +59,14 @@
     if (!DATA.yanUrunler || !DATA.yanUrunler.length) return "";
     return '<div class="menu-extra"><h3>Yan Ürünler</h3><ul>' + items(DATA.yanUrunler) + "</ul></div>";
   }
+  /* 2 menüyü bir kitap sayfasında grupla — menü sayısı ne olursa olsun */
   function pages() {
     var yu = yanUrunler();
-    return [
-      card(menuler[0]) + card(menuler[1]) + yu,
-      card(menuler[2]) + card(menuler[3]) + yu,
-      card(menuler[4]) + card(menuler[5]) + yu,
-      card(menuler[6]) + card(menuler[7]) + yu
-    ];
+    var groups = [];
+    for (var i = 0; i < menuler.length; i += 2) {
+      groups.push(card(menuler[i]) + (menuler[i + 1] ? card(menuler[i + 1]) : "") + yu);
+    }
+    return groups;
   }
   function sundayLeft() {
     var p = DATA.pazar || {};
@@ -88,15 +89,19 @@
       slides = pg.map(function (html) { return slideEl(pageEl(html)); });
       slides.push(slideEl(pageEl(sundayRight(), "menu-page--sunday"), "menu-slide--sunday"));
     } else {
-      slides = [
-        slideEl(pageEl(pg[0], "menu-page--l") + pageEl(pg[1], "menu-page--r")),
-        slideEl(pageEl(pg[2], "menu-page--l") + pageEl(pg[3], "menu-page--r")),
-        slideEl(
-          pageEl(sundayLeft(), "menu-page--l menu-page--sunday") +
-          pageEl(sundayRight(), "menu-page--r menu-page--sunday"),
-          "menu-slide--sunday"
-        )
-      ];
+      slides = [];
+      for (var i = 0; i < pg.length; i += 2) {
+        if (pg[i + 1] !== undefined) {
+          slides.push(slideEl(pageEl(pg[i], "menu-page--l") + pageEl(pg[i + 1], "menu-page--r")));
+        } else {
+          slides.push(slideEl(pageEl(pg[i], "menu-page--l"), "menu-slide--solo"));
+        }
+      }
+      slides.push(slideEl(
+        pageEl(sundayLeft(), "menu-page--l menu-page--sunday") +
+        pageEl(sundayRight(), "menu-page--r menu-page--sunday"),
+        "menu-slide--sunday"
+      ));
     }
 
     book.innerHTML =
