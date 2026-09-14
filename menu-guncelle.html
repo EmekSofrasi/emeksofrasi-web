@@ -102,7 +102,7 @@
     letter-spacing:0.03em;
     margin-bottom:4px;
   }
-  input[type="text"],input[type="password"]{
+  input[type="text"],input[type="password"],input[type="date"]{
     width:100%;
     padding:9px 11px;
     border:1px solid var(--line);
@@ -112,7 +112,7 @@
     background:#fff;
     color:var(--ink);
   }
-  input[type="text"]:focus,input[type="password"]:focus{
+  input[type="text"]:focus,input[type="password"]:focus,input[type="date"]:focus{
     outline:2px solid var(--green-2);
     outline-offset:1px;
   }
@@ -121,16 +121,62 @@
     color:#8a8270;
   }
   .hafta-row{
-    max-width:340px;
+    max-width:460px;
   }
   .yan-row{
     max-width:100%;
+  }
+  .hafta-preview{
+    font-size:0.85rem;
+    color:var(--green-2);
+    font-weight:700;
+    margin:10px 0 0;
   }
   .hint{
     font-size:0.8rem;
     color:#6b6350;
     margin-top:8px;
   }
+  .food-row{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .food-input-row{
+    display:flex;
+    gap:6px;
+    align-items:center;
+  }
+  .food-input-row input{
+    flex:1;
+  }
+  .remove-food{
+    flex-shrink:0;
+    background:transparent;
+    border:1px solid var(--danger);
+    color:var(--danger);
+    border-radius:6px;
+    width:32px;
+    height:34px;
+    font-size:1.1rem;
+    line-height:1;
+    padding:0;
+    cursor:pointer;
+  }
+  .remove-food:hover{background:var(--danger);color:#fff;}
+  .add-food-btn{
+    margin-top:12px;
+    background:transparent;
+    border:1.5px dashed var(--gold-2);
+    color:var(--gold-2);
+    padding:8px 16px;
+    border-radius:8px;
+    font:inherit;
+    font-weight:700;
+    font-size:0.85rem;
+    cursor:pointer;
+  }
+  .add-food-btn:hover{background:var(--gold-2);color:var(--cream);}
   .submit-card{
     text-align:center;
   }
@@ -179,10 +225,15 @@
   <div class="card">
     <div class="fields hafta-row">
       <div>
-        <label class="field-label" for="hafta">Hafta (tarih aralığı)</label>
-        <input type="text" id="hafta" name="hafta" placeholder="14 – 20 Eylül" required>
+        <label class="field-label" for="haftaBaslangic">Başlangıç Tarihi</label>
+        <input type="date" id="haftaBaslangic" name="haftaBaslangic" required>
+      </div>
+      <div>
+        <label class="field-label" for="haftaBitis">Bitiş Tarihi</label>
+        <input type="date" id="haftaBitis" name="haftaBitis" required>
       </div>
     </div>
+    <p class="hafta-preview" id="hafta-preview"></p>
   </div>
 
   <div id="menuler-wrap"></div>
@@ -191,7 +242,7 @@
     <h2>Yan Ürünler <span class="fixed-badge">Her Hafta Sabit Kalabilir</span></h2>
     <div class="fields yan-row">
       <div>
-        <label class="field-label" for="yanUrunler">Kalemler (virgülle ayırın)</label>
+        <label class="field-label" for="yanUrunler">Yemekler (virgülle ayırın)</label>
         <input type="text" id="yanUrunler" name="yanUrunler" placeholder="Cacık, Buharda Pişmiş Sebzeler" required>
       </div>
     </div>
@@ -221,7 +272,53 @@
   var statusEl = document.getElementById("status");
   var submitBtn = document.getElementById("submit-btn");
 
-  var KALEM_PLACEHOLDER = ["Günün Çorbası", "Ana Yemek", "Yan Ürün / Salata", "İçecek"];
+  var YEMEK_PLACEHOLDER = ["Günün Çorbası", "Ana Yemek", "Yan Ürün / Salata", "İçecek"];
+
+  function renumber(container) {
+    var labels = container.querySelectorAll(".field-label");
+    for (var i = 0; i < labels.length; i++) labels[i].textContent = (i + 1) + ". Yemek";
+    var removeBtns = container.querySelectorAll(".remove-food");
+    for (var j = 0; j < removeBtns.length; j++) {
+      removeBtns[j].style.visibility = removeBtns.length > 1 ? "visible" : "hidden";
+    }
+  }
+
+  function addFoodField(container, placeholder, value) {
+    var row = document.createElement("div");
+    row.className = "food-row";
+
+    var label = document.createElement("label");
+    label.className = "field-label";
+    label.textContent = "Yemek";
+    row.appendChild(label);
+
+    var inputRow = document.createElement("div");
+    inputRow.className = "food-input-row";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.required = true;
+    input.placeholder = placeholder || "Ek Yemek";
+    if (value) input.value = value;
+    inputRow.appendChild(input);
+
+    var removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "remove-food";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Bu yemeği kaldır";
+    removeBtn.addEventListener("click", function () {
+      if (container.querySelectorAll(".food-row").length <= 1) return;
+      row.remove();
+      renumber(container);
+    });
+    inputRow.appendChild(removeBtn);
+
+    row.appendChild(inputRow);
+    container.appendChild(row);
+    renumber(container);
+    return input;
+  }
 
   function buildMenuCard(no) {
     var card = document.createElement("div");
@@ -243,22 +340,19 @@
 
     var fields = document.createElement("div");
     fields.className = "fields";
+    fields.setAttribute("data-menu", no);
     for (var i = 0; i < 4; i++) {
-      var field = document.createElement("div");
-      var label = document.createElement("label");
-      label.className = "field-label";
-      label.textContent = (i + 1) + ". Kalem";
-      var input = document.createElement("input");
-      input.type = "text";
-      input.required = true;
-      input.placeholder = KALEM_PLACEHOLDER[i];
-      input.setAttribute("data-menu", no);
-      input.setAttribute("data-kalem-index", i);
-      field.appendChild(label);
-      field.appendChild(input);
-      fields.appendChild(field);
+      addFoodField(fields, YEMEK_PLACEHOLDER[i]);
     }
     card.appendChild(fields);
+
+    var addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "add-food-btn";
+    addBtn.textContent = "+ Yemek Ekle";
+    addBtn.addEventListener("click", function () { addFoodField(fields); });
+    card.appendChild(addBtn);
+
     return card;
   }
 
@@ -266,15 +360,65 @@
     wrap.appendChild(buildMenuCard(m));
   }
 
+  var MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function toISODate(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+
+  function formatHaftaText(startStr, endStr) {
+    if (!startStr || !endStr) return "";
+    var s = new Date(startStr + "T00:00:00");
+    var e = new Date(endStr + "T00:00:00");
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return "";
+    var sd = s.getDate(), sm = MONTHS[s.getMonth()], sy = s.getFullYear();
+    var ed = e.getDate(), em = MONTHS[e.getMonth()], ey = e.getFullYear();
+    if (sy !== ey) return sd + " " + sm + " " + sy + " – " + ed + " " + em + " " + ey;
+    if (sm !== em) return sd + " " + sm + " – " + ed + " " + em;
+    return sd + " – " + ed + " " + em;
+  }
+
+  var startInput = document.getElementById("haftaBaslangic");
+  var endInput = document.getElementById("haftaBitis");
+  var haftaPreview = document.getElementById("hafta-preview");
+
+  function updateHaftaPreview() {
+    var text = formatHaftaText(startInput.value, endInput.value);
+    haftaPreview.textContent = text ? ("Sitede görünecek: " + text) : "";
+  }
+  startInput.addEventListener("change", updateHaftaPreview);
+  endInput.addEventListener("change", updateHaftaPreview);
+
+  // Varsayılan: bugünden sonraki ilk Pazartesi – Pazar (bir sonraki hafta)
+  (function setDefaultDates() {
+    var today = new Date();
+    var day = today.getDay();
+    var diffToMonday = (8 - day) % 7;
+    if (diffToMonday === 0) diffToMonday = 7;
+    var nextMonday = new Date(today);
+    nextMonday.setDate(today.getDate() + diffToMonday);
+    var nextSunday = new Date(nextMonday);
+    nextSunday.setDate(nextMonday.getDate() + 6);
+    startInput.value = toISODate(nextMonday);
+    endInput.value = toISODate(nextSunday);
+    updateHaftaPreview();
+  })();
+
   function prefill() {
     var data = window.MENU_DATA;
     if (!data) return;
-    document.getElementById("hafta").value = data.hafta || "";
     document.getElementById("yanUrunler").value = (data.yanUrunler || []).join(", ");
     (data.menuler || []).forEach(function (menu) {
-      var inputs = document.querySelectorAll('input[data-menu="' + menu.no + '"]');
-      (menu.kalemler || []).forEach(function (val, i) {
-        if (inputs[i]) inputs[i].value = val;
+      var container = document.querySelector('.fields[data-menu="' + menu.no + '"]');
+      if (!container) return;
+      var items = menu.kalemler || [];
+      var inputs = container.querySelectorAll("input");
+      // Gerekirse fazladan alan ekle (4'ten fazla yemek varsa)
+      while (inputs.length < items.length) {
+        addFoodField(container);
+        inputs = container.querySelectorAll("input");
+      }
+      inputs.forEach(function (input, i) {
+        if (items[i] !== undefined) input.value = items[i];
       });
     });
   }
@@ -288,11 +432,21 @@
   form.addEventListener("submit", function (e) {
     e.preventDefault();
 
+    var hafta = formatHaftaText(startInput.value, endInput.value);
+    if (!hafta) {
+      showStatus("err", "⚠️ Başlangıç ve bitiş tarihini seç.");
+      return;
+    }
+
     var menuler = [];
     for (var no = 1; no <= 8; no++) {
-      var inputs = document.querySelectorAll('input[data-menu="' + no + '"]');
+      var container = document.querySelector('.fields[data-menu="' + no + '"]');
+      var inputs = container.querySelectorAll("input");
       var kalemler = [];
-      for (var i = 0; i < inputs.length; i++) kalemler.push(inputs[i].value.trim());
+      for (var i = 0; i < inputs.length; i++) {
+        var v = inputs[i].value.trim();
+        if (v) kalemler.push(v);
+      }
       menuler.push({ no: no, kalemler: kalemler });
     }
 
@@ -303,7 +457,7 @@
 
     var payload = {
       password: document.getElementById("password").value,
-      hafta: document.getElementById("hafta").value.trim(),
+      hafta: hafta,
       menuler: menuler,
       yanUrunler: yanUrunler
     };
