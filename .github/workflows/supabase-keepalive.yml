@@ -1,0 +1,15 @@
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: "17 6 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping menu database
+        run: |
+          curl -fsS "https://zkhtsnfdrygqhmgxahgm.supabase.co/rest/v1/menu?id=eq.1&select=updated_at" \
+            -H "apikey: sb_publishable_u6uQYPTqLAA_0hFO1FDYSA_Fx29H_WX"
