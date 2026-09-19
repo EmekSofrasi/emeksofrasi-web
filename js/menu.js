@@ -33,11 +33,16 @@
 
   /* Supabase tanımlıysa güncel menüyü oradan al; olmazsa menu-data.js geçerli kalır */
   var CFG = window.MENU_CONFIG || {};
+  function sbHeaders(key) {
+    var h = { apikey: key };
+    if (/^eyJ/.test(key)) h.Authorization = "Bearer " + key;
+    return h;
+  }
   if (CFG.supabaseUrl && CFG.supabaseKey && window.fetch) {
     var ctrl = window.AbortController ? new AbortController() : null;
     var abortTimer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 5000);
     fetch(CFG.supabaseUrl + "/rest/v1/menu?id=eq.1&select=data", {
-      headers: { apikey: CFG.supabaseKey, Authorization: "Bearer " + CFG.supabaseKey },
+      headers: sbHeaders(CFG.supabaseKey),
       cache: "no-store",
       signal: ctrl ? ctrl.signal : undefined
     })

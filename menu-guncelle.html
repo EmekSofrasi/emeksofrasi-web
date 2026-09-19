@@ -302,6 +302,11 @@
   "use strict";
 
   var CFG = window.MENU_CONFIG || {};
+  function sbHeaders(key) {
+    var h = { apikey: key };
+    if (/^eyJ/.test(key)) h.Authorization = "Bearer " + key;
+    return h;
+  }
 
   var wrap = document.getElementById("menuler-wrap");
   var form = document.getElementById("menu-form");
@@ -511,7 +516,7 @@
 
   if (CFG.supabaseUrl && CFG.supabaseKey) {
     fetch(CFG.supabaseUrl + "/rest/v1/menu?id=eq.1&select=data", {
-      headers: { apikey: CFG.supabaseKey, Authorization: "Bearer " + CFG.supabaseKey },
+      headers: sbHeaders(CFG.supabaseKey),
       cache: "no-store"
     })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
@@ -586,11 +591,7 @@
 
     fetch(CFG.supabaseUrl + "/rest/v1/rpc/update_menu", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: CFG.supabaseKey,
-        Authorization: "Bearer " + CFG.supabaseKey
-      },
+      headers: Object.assign({ "Content-Type": "application/json" }, sbHeaders(CFG.supabaseKey)),
       body: JSON.stringify({
         p_password: password,
         p_data: { hafta: hafta, menuler: menuler, yanUrunler: yanUrunler }
