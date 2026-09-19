@@ -14,17 +14,17 @@
    ========================================================================== */
 
 window.MENU_DATA = {
-  hafta: "14 – 20 Eylül",
+  hafta: "21 – 27 Eylül",
 
   /* 8 menü — açık kitapta: sol sayfa 1-2 / 5-6, sağ sayfa 3-4 / 7-8
      Menü 7-8 + Yan Ürünler HER HAFTA SABİT (kullanıcı kuralı 2026-09-11) */
   menuler: [
     { no: 1, kalemler: ["Günün Çorbası", "Tavuklu Pilav", "Mevsim Salata", "Meşrubat"] },
-    { no: 2, kalemler: ["Günün Çorbası", "Pilav", "Patlıcan Kebap", "Meşrubat"] },
-    { no: 3, kalemler: ["Günün Çorbası", "Makarna", "Bezelye", "Meşrubat"] },
-    { no: 4, kalemler: ["Günün Çorbası", "Pilav", "Biber Dolması", "Meşrubat"] },
-    { no: 5, kalemler: ["Günün Çorbası", "Pilav", "Sebzeli Tavuk Sarma", "Meşrubat"] },
-    { no: 6, kalemler: ["Günün Çorbası", "Pilav", "Dana Ciğer", "Meşrubat"] },
+    { no: 2, kalemler: ["Günün Çorbası", "Pilav", "Patates Püreli Et Sote", "Meşrubat"] },
+    { no: 3, kalemler: ["Günün Çorbası", "Makarna", "Taze Fasulye", "Meşrubat"] },
+    { no: 4, kalemler: ["Günün Çorbası", "Pilav", "Karnıyarık", "Meşrubat"] },
+    { no: 5, kalemler: ["Günün Çorbası", "Pilav", "Köri Soslu Tavuk", "Meşrubat"] },
+    { no: 6, kalemler: ["Günün Çorbası", "Pilav", "Ispanaklı Piliç Prenses", "Meşrubat"] },
     { no: 7, kalemler: ["Günün Çorbası", "Pilav", "Kekikli Izgara Tavuk", "Meşrubat"] },
     { no: 8, kalemler: ["Günün Çorbası", "Pilav", "Izgara Köfte", "Meşrubat"] }
   ],
