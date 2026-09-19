@@ -31,6 +31,29 @@
 
   if (weekEl && DATA.hafta) weekEl.textContent = DATA.hafta;
 
+  /* Supabase tanımlıysa güncel menüyü oradan al; olmazsa menu-data.js geçerli kalır */
+  var CFG = window.MENU_CONFIG || {};
+  if (CFG.supabaseUrl && CFG.supabaseKey && window.fetch) {
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var abortTimer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 5000);
+    fetch(CFG.supabaseUrl + "/rest/v1/menu?id=eq.1&select=data", {
+      headers: { apikey: CFG.supabaseKey, Authorization: "Bearer " + CFG.supabaseKey },
+      cache: "no-store",
+      signal: ctrl ? ctrl.signal : undefined
+    })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (rows) {
+        clearTimeout(abortTimer);
+        var d = rows && rows[0] && rows[0].data;
+        if (!d || !d.menuler || !d.menuler.length) return;
+        DATA = Object.assign({}, DATA, d);
+        menuler = d.menuler.slice();
+        if (weekEl && DATA.hafta) weekEl.textContent = DATA.hafta;
+        if (built && !open.hidden) build();
+      })
+      .catch(function () {});
+  }
+
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];

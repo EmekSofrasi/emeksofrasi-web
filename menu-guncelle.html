@@ -286,22 +286,22 @@
   </div>
 
   <div class="card submit-card">
-    <label class="field-label" for="password">Yönetici Anahtarı</label>
+    <label class="field-label" for="password">Parola</label>
     <input type="password" id="password" name="password" autocomplete="current-password" required>
     <button type="submit" id="submit-btn">Menüyü Güncelle</button>
-    <p class="hint">Güncelleme birkaç dakika içinde emeksofrasi.com üzerinde yayına girer.</p>
+    <p class="hint">Güncelleme kaydedilince menü sayfasında hemen görünür.</p>
   </div>
 </form>
 
 <div id="status"></div>
 
 <script src="js/menu-data.js"></script>
+<script src="js/menu-config.js"></script>
 <script>
 (function () {
   "use strict";
 
-  var REPO = "yemre-aydin/emeksofrasi-web";
-  var FILE_PATH = "js/menu-data.js";
+  var CFG = window.MENU_CONFIG || {};
 
   var wrap = document.getElementById("menuler-wrap");
   var form = document.getElementById("menu-form");
@@ -439,7 +439,8 @@
 
   var initialCount = (window.MENU_DATA && window.MENU_DATA.menuler && window.MENU_DATA.menuler.length) || 8;
   for (var m = 1; m <= initialCount; m++) {
-    wrap.appendChild(buildMenuCard(m));
+    var staticItems = window.MENU_DATA && window.MENU_DATA.menuler && window.MENU_DATA.menuler[m - 1];
+    wrap.appendChild(buildMenuCard(m, staticItems && staticItems.kalemler ? staticItems.kalemler.length : 4));
   }
   updateFixedBadges();
 
@@ -488,8 +489,7 @@
     updateHaftaPreview();
   })();
 
-  function prefill() {
-    var data = window.MENU_DATA;
+  function prefill(data) {
     if (!data) return;
     document.getElementById("yanUrunler").value = (data.yanUrunler || []).join(", ");
     (data.menuler || []).forEach(function (menu) {
@@ -507,7 +507,24 @@
       });
     });
   }
-  prefill();
+  prefill(window.MENU_DATA);
+
+  if (CFG.supabaseUrl && CFG.supabaseKey) {
+    fetch(CFG.supabaseUrl + "/rest/v1/menu?id=eq.1&select=data", {
+      headers: { apikey: CFG.supabaseKey, Authorization: "Bearer " + CFG.supabaseKey },
+      cache: "no-store"
+    })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (rows) {
+        var d = rows && rows[0] && rows[0].data;
+        if (!d || !d.menuler || !d.menuler.length) return;
+        wrap.innerHTML = "";
+        for (var n = 1; n <= d.menuler.length; n++) wrap.appendChild(buildMenuCard(n, (d.menuler[n - 1].kalemler || []).length || 4));
+        updateFixedBadges();
+        prefill(d);
+      })
+      .catch(function () {});
+  }
 
   function showStatus(kind, text) {
     statusEl.className = "show " + kind;
@@ -552,12 +569,12 @@
       return;
     }
 
-    var token = document.getElementById("password").value.trim();
-    var apiUrl = "https://api.github.com/repos/" + REPO + "/contents/" + FILE_PATH;
-    var headers = {
-      "Authorization": "Bearer " + token,
-      "Accept": "application/vnd.github+json"
-    };
+    if (!CFG.supabaseUrl || !CFG.supabaseKey) {
+      showStatus("err", "⚠️ Menü veritabanı henüz bağlanmamış (menu-config.js boş).");
+      return;
+    }
+
+    var password = document.getElementById("password").value;
 
     submitBtn.disabled = true;
     showStatus("pending", "Güncelleniyor…");
@@ -567,88 +584,35 @@
       showStatus("err", "⚠️ " + text);
     }
 
-    fetch(apiUrl + "?ref=main&t=" + Date.now(), { headers: headers })
-      .then(function (res) {
-        if (res.status === 401 || res.status === 403) throw new Error("Anahtar geçersiz veya süresi dolmuş.");
-        if (!res.ok) throw new Error("Mevcut menü dosyası okunamadı (" + res.status + ").");
-        return res.json();
+    fetch(CFG.supabaseUrl + "/rest/v1/rpc/update_menu", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: CFG.supabaseKey,
+        Authorization: "Bearer " + CFG.supabaseKey
+      },
+      body: JSON.stringify({
+        p_password: password,
+        p_data: { hafta: hafta, menuler: menuler, yanUrunler: yanUrunler }
       })
-      .then(function (current) {
-        return fetch(apiUrl, {
-          method: "PUT",
-          headers: Object.assign({ "Content-Type": "application/json" }, headers),
-          body: JSON.stringify({
-            message: "chore: haftalık menü güncellemesi (" + hafta + ") — admin panel",
-            content: toBase64(buildFile(hafta, menuler, yanUrunler)),
-            sha: current.sha,
-            branch: "main"
-          })
+    })
+      .then(function (res) {
+        if (res.ok) {
+          submitBtn.disabled = false;
+          showStatus("ok", "✅ Menü güncellendi. Menü sayfasını yenileyince görünür.");
+          return;
+        }
+        return res.json().catch(function () { return {}; }).then(function (err) {
+          var msg = (err && err.message) || "";
+          if (msg.indexOf("wrong_password") !== -1) fail("Parola hatalı.");
+          else if (msg.indexOf("invalid_data") !== -1) fail("Eksik veya hatalı veri var, alanları kontrol et.");
+          else fail("Menü kaydedilemedi (" + res.status + ").");
         });
       })
-      .then(function (res) {
-        if (res.status === 401 || res.status === 403) throw new Error("Bu anahtarın yazma yetkisi yok.");
-        if (!res.ok) throw new Error("Menü kaydedilemedi (" + res.status + ").");
-        submitBtn.disabled = false;
-        showStatus("ok", "✅ Menü güncellendi. Birkaç dakika içinde sitede görünecek.");
-      })
-      .catch(function (err) {
-        if (err instanceof TypeError) fail("İnternet bağlantısı kurulamadı, tekrar dene.");
-        else fail(err.message);
+      .catch(function () {
+        fail("İnternet bağlantısı kurulamadı, tekrar dene.");
       });
   });
-
-  function esc(s) { return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"'); }
-
-  function toBase64(str) {
-    return btoa(unescape(encodeURIComponent(str)));
-  }
-
-  function buildFile(hafta, menuler, yanUrunler) {
-    var menulerLines = menuler.map(function (m) {
-      var kalemStr = m.kalemler.map(function (k) { return '"' + esc(k) + '"'; }).join(", ");
-      return "    { no: " + m.no + ", kalemler: [" + kalemStr + "] }";
-    }).join(",\n");
-    var yanStr = yanUrunler.map(function (y) { return '"' + esc(y) + '"'; }).join(", ");
-
-    return [
-      "/* ==========================================================================",
-      "   EMEK SOFRASI — HAFTALIK MENÜ VERİSİ",
-      "   --------------------------------------------------------------------------",
-      "   Bu dosya menu-guncelle.html yönetim paneli üzerinden otomatik güncellenir.",
-      "   Elle düzenleme gerekirse aynı yapıyı koruyun.",
-      "",
-      "   KURALLAR",
-      "   - Sitede FİYAT gösterilmez.",
-      "   - Menü sayısı haftadan haftaya değişebilir. Gün kavramı yok.",
-      "   - Pazar günü işletme kapalıdır; menü yerine karşılama mesajları gösterilir.",
-      "   ========================================================================== */",
-      "",
-      "window.MENU_DATA = {",
-      '  hafta: "' + esc(hafta) + '",',
-      "",
-      "  menuler: [",
-      menulerLines,
-      "  ],",
-      "",
-      "  yanUrunler: [" + yanStr + "],",
-      "",
-      "  /* Pazar — restoran kapalı */",
-      "  pazar: {",
-      '    baslik: "Pazar",',
-      "    mesajlar: [",
-      '      { baslik: "Günün Dileği", metin: "Güzel bir pazar geçirin." },',
-      '      { baslik: "Günün Tadı", metin: "Sevdiklerinizle keyfini çıkarın." },',
-      '      { baslik: "Haftanın Daveti", metin: "Yeni haftada soframıza bekleriz." }',
-      "    ],",
-      '    kapanis: "Pazar günleri kapalıyız.",',
-      '    gorsel: "images/menu/pazar-gorseli.png"',
-      "  },",
-      "",
-      '  not: "Menülerimiz haftalık olarak değişiklik gösterebilir."',
-      "};",
-      ""
-    ].join("\n");
-  }
 })();
 </script>
 </body>
