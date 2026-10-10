@@ -44,6 +44,7 @@
     "body{padding-bottom:58px}",
     ".es-chat{bottom:70px}",
     "#es-consent{bottom:70px}",
+    ".footer-signature{padding-bottom:72px}",
     "}"
   ].join("");
   document.head.appendChild(st);
